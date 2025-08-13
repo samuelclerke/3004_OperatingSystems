@@ -27,7 +27,7 @@ void sigHandler(int sig)
   return;
 }
 
-int main(int argc, char** argv) 
+int main(int argc, char* argv[]) 
 {
   int evenNum = 0;
   char evenNumStr[12];
