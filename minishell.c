@@ -38,6 +38,7 @@ prompt(void)
 int main(int argk, char *argv[], char *envp[])
 {
    int             frkRtnVal;	    /* value returned by fork sys call */
+   int             bgFrkRtnVal;
    int             wpid;		        /* value returned by wait */
   char           *v[NV];	        /* array of pointers to command line tokens */
   char           *sep = " \t\n";  /* command line token separators    */
@@ -67,6 +68,7 @@ int main(int argk, char *argv[], char *envp[])
 	      break;
       }
     }
+
     /* assert i is number of tokens + 1 */
 
     /* fork a child process to exec the command in v[0] */
@@ -77,10 +79,41 @@ int main(int argk, char *argv[], char *envp[])
       }
       case 0:			/* code executed only by child process */
       {
-	      execvp(v[0], v);
+        if (v[i-1] && strcmp(v[i-1], "&") == 0) // Place into background mode
+        {
+          v[i-1] = NULL;
+          
+          pid_t pid = fork();
+          
+          if (pid < 0) 
+          {
+            perror("Fork\n");
+            continue;
+          }
+          
+          else if (pid == 0) 
+          {
+            execvp(v[0], v);
+            perror("execvp");
+            _exit(127);
+          }
+
+          else
+          {
+            // STORE PID + CMD STRING IN JOB TABLE
+          }
+        }
+        else
+        {
+          execvp(v[0], v);
+        }
       }
       default:			/* code executed only by parent process */
       {
+        if (v[i-1] && strcmp(v[i-1], "&") == 0)
+        {
+          break;
+        }
       	wpid = wait(0);
         printf("%s done \n", v[0]);
     	  break;
