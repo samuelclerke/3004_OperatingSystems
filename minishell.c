@@ -73,14 +73,12 @@ void sigchld_handler(int sig)
   }
 }
 
-void add_job(pid_t pid, char *cmd)
+void add_job(pid_t pid, char *cmd, int slot)
 {
-  int slot = getNextJobSlot();
-
   jobs[slot].id = slot + 1;
   jobs[slot].pid = pid;
   jobs[slot].running = 1;
-  snprintf(jobs[slot].completed_msg, sizeof(jobs[slot].completed_msg), "[%d]+ Done          %s\n", jobs[slot].id, cmd);
+  snprintf(jobs[slot].completed_msg, sizeof(jobs[slot].completed_msg), "[%d]+ Done %s\n", jobs[slot].id, cmd);
 }
 
 void join_tokens(char *dest, char *tokens[], int maxlen)
@@ -111,7 +109,7 @@ void wait_for_background_jobs() {
       }
     }
     if (has_running_jobs) {
-      usleep(100000); // Sleep for 100ms and check again
+      usleep(100000);
     }
   }
 }
@@ -199,10 +197,12 @@ signal(SIGCHLD, sigchld_handler);
       {
         if (bgProcess)
         {
+          int slot = getNextJobSlot();
+
           char cmdline[256];
           join_tokens(cmdline, v, sizeof(cmdline));
-          printf("[%d] %d\n", getNextJobSlot() + 1, frkRtnVal);
-          add_job(frkRtnVal, cmdline);
+          printf("[%d] %d\n", slot + 1, frkRtnVal);
+          add_job(frkRtnVal, cmdline, slot);
         }
         else
         {
