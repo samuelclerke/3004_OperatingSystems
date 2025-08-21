@@ -21,6 +21,16 @@
 char            line[NL];	/* command input buffer */
 
 
+struct job
+{
+  int id;
+  pid_t pid;
+  char completed_msg[256];
+  int running;
+};
+
+struct job jobs[256] = {0};
+
 /*
 	shell prompt
  */
@@ -31,6 +41,64 @@ void prompt(void)
   fflush(stdout);
 }
 
+int getNextJobSlot()
+{
+  int idx = 0;
+  for (int i = 0; i < 256; i++)
+  {
+    if (jobs[i].running == 0)
+    {
+      idx = i;
+      break;
+    }
+  }
+  return idx;
+}
+
+void sigchld_handler(int sig)
+{
+  int status;
+  pid_t pid;
+
+  while ((pid = waitpid(-1, &status, WNOHANG)) > 0)
+  {
+    for (int i = 0; i < 256; i++)
+    {
+      if (jobs[i].pid == pid && jobs[i].running)
+      {
+        jobs[i].running = 0;
+        write(1, jobs[i].completed_msg, 256);
+      }
+    }
+  }
+}
+
+void add_job(pid_t pid, char *cmd)
+{
+  int slot = getNextJobSlot();
+
+  jobs[slot].id = slot + 1;
+  jobs[slot].pid = pid;
+  jobs[slot].running = 1;
+  snprintf(jobs[slot].completed_msg, sizeof(jobs[slot].completed_msg), "[%d]+ Done          %s\n", jobs[slot].id, cmd);
+}
+
+void join_tokens(char *dest, char *tokens[], int maxlen)
+{
+  dest[0] = '\0';
+  for (int i = 0; tokens[i] != NULL; i++)
+  {
+    if(strlen(dest) + strlen(tokens[i]) + 2 >= maxlen)
+    {
+      break;
+    }
+    strcat(dest, tokens[i]);
+    if (tokens[i+1] != NULL)
+    {
+      strcat(dest, " ");
+    }
+  }
+}
 
 /* argk - number of arguments */
 /* argv - argument vector from command line */
@@ -41,7 +109,7 @@ int main(int argk, char *argv[], char *envp[])
   char           *v[NV];	        /* array of pointers to command line tokens */
   char           *sep = " \t\n";  /* command line token separators    */
   int             i;		          /* parse index */
-  //int             bgProcess;
+  int             bgProcess;
 
     /* prompt for and process one command line at a time  */
 
@@ -89,7 +157,15 @@ int main(int argk, char *argv[], char *envp[])
       continue; // continue to next event iteration
     }
 
-    
+    // Check if process is intended to be background process via appended &
+
+    bgProcess = 0;
+    if (i > 1 && strcmp(v[i-1], "&") == 0)
+    {
+      bgProcess = 1;
+      v[i-1] = NULL;
+      i--;
+    }
 
     /* fork a child process to exec the command in v[0] */
     switch (frkRtnVal = fork()) {
@@ -103,7 +179,17 @@ int main(int argk, char *argv[], char *envp[])
       }
       default:			/* code executed only by parent process */
       {
-      	wait(0);
+        if (bgProcess)
+        {
+          char cmdline[256];
+          join_tokens(cmdline, v, sizeof(cmdline));
+          printf("[%d] %d\n", getNextJobSlot() + 1, frkRtnVal);
+          add_job(frkRtnVal, cmdline);
+        }
+        else
+        {
+          wait(0);
+        }
     	  break;
       }
     }				/* switch */
