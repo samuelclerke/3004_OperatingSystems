@@ -27,7 +27,6 @@ char            line[NL];	/* command input buffer */
 
 void prompt(void)
 {
-  fprintf(stdout, "\n msh> ");
   fflush(stdout);
   return;
 }
@@ -118,7 +117,7 @@ int main(int argk, char *argv[], char *envp[])
   signal(SIGCHLD, sig_handler);
 
   while (1) {			/* do Forever */
-    //prompt();
+    prompt();
     fgets(line, NL, stdin);
     fflush(stdin);
 
@@ -149,6 +148,26 @@ int main(int argk, char *argv[], char *envp[])
       v[i-1] = NULL;
     }
 
+    if (strcmp(v[0], "cd") == 0) 
+    {
+      if (v[1] == NULL) 
+      {
+        char *home = getenv("HOME");
+        if (chdir(home) != 0) 
+        {
+          perror("cd");
+        }
+      }
+      else 
+      {
+        if (chdir(v[1]) != 0) 
+        {
+          perror("cd");
+        }
+      }
+      continue;
+    }
+
     
     /* assert i is number of tokens + 1 */
 
@@ -176,7 +195,7 @@ int main(int argk, char *argv[], char *envp[])
         }
         else 
         {
-         // wpid = wait(0);
+         wait(0);
         }
     	  break;
       }
