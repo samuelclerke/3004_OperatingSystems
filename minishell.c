@@ -112,7 +112,8 @@ int main(int argk, char *argv[], char *envp[])
   int             bgProcess;
 
     /* prompt for and process one command line at a time  */
-
+signal(SIGCHLD, sigchld_handler);
+    
   while (1) {			/* do Forever */
     prompt();
     fgets(line, NL, stdin);
