@@ -67,6 +67,7 @@ void sigchld_handler(int sig)
       if (jobs[i].pid == pid && jobs[i].running)
       {
         jobs[i].running = 0;
+        fflush(stdout);
         write(1, jobs[i].completed_msg, 256);
         fflush(stdout);
       }
