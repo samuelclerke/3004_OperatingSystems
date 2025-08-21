@@ -194,7 +194,6 @@ int main(int argk, char *argv[], char *envp[])
         else 
         {
          wpid = wait(0);
-         wpid += 1;
         }
     	  break;
       }
