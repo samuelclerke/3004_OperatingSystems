@@ -1,6 +1,8 @@
 {
   "files.associations": {
     ".fantomasignore": "ignore",
-    "cstdlib": "c"
+    "cstdlib": "c",
+    "wait.h": "c",
+    "stdio.h": "c"
   }
 }
