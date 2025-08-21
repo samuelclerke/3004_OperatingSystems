@@ -68,6 +68,7 @@ void sigchld_handler(int sig)
       {
         jobs[i].running = 0;
         write(1, jobs[i].completed_msg, 256);
+        fflush(stdout);
       }
     }
   }
