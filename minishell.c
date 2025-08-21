@@ -206,7 +206,7 @@ signal(SIGCHLD, sigchld_handler);
         }
         else
         {
-          wait(0);
+          waitpid(frkRtnVal, NULL, 0);
         }
     	  break;
       }
