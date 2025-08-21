@@ -100,6 +100,22 @@ void join_tokens(char *dest, char *tokens[], int maxlen)
   }
 }
 
+void wait_for_background_jobs() {
+  int has_running_jobs = 1;
+  while (has_running_jobs) {
+    has_running_jobs = 0;
+    for (int i = 0; i < 256; i++) {
+      if (jobs[i].running) {
+        has_running_jobs = 1;
+        break;
+      }
+    }
+    if (has_running_jobs) {
+      usleep(100000); // Sleep for 100ms and check again
+    }
+  }
+}
+
 /* argk - number of arguments */
 /* argv - argument vector from command line */
 /* envp - environment pointer */
@@ -121,6 +137,7 @@ signal(SIGCHLD, sigchld_handler);
 
     // This if() required for gradescope
     if (feof(stdin)) {		/* non-zero on EOF  */
+      wait_for_background_jobs();
       exit(0);
     }
     if (line[0] == '#' || line[0] == '\n' || line[0] == '\000'){
