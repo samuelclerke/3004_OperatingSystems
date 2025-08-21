@@ -148,26 +148,6 @@ int main(int argk, char *argv[], char *envp[])
       v[i-1] = NULL;
     }
 
-    if (strcmp(v[0], "cd") == 0) 
-    {
-      if (v[1] == NULL) 
-      {
-        char *home = getenv("HOME");
-        if (chdir(home) != 0) 
-        {
-          perror("cd");
-        }
-      }
-      else 
-      {
-        if (chdir(v[1]) != 0) 
-        {
-          perror("cd");
-        }
-      }
-      continue;
-    }
-
     
     /* assert i is number of tokens + 1 */
 
