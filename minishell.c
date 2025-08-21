@@ -142,6 +142,7 @@ signal(SIGCHLD, sigchld_handler);
       continue;			/* to prompt */
     }
 
+    line[strcspn(line, "\n")] = '\0';
     v[0] = strtok(line, sep);
     for (i = 1; i < NV; i++) {
       v[i] = strtok(NULL, sep);
