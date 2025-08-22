@@ -41,7 +41,7 @@ void prompt(void)
   fflush(stdout);
 }
 
-int getNextJobSlot()
+int get_next_job_slot()
 {
   int idx = 0;
   for (int i = 0; i < 256; i++)
@@ -201,7 +201,7 @@ signal(SIGCHLD, sigchld_handler);
       {
         if (bgProcess)
         {
-          int slot = getNextJobSlot();
+          int slot = get_next_job_slot();
 
           char cmdline[256];
           join_tokens(cmdline, v, sizeof(cmdline));
