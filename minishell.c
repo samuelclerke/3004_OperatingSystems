@@ -1,4 +1,4 @@
-int             eof_reached = 0;    /* flag to track if EOF was reached *//*********************************************************************
+/*********************************************************************
    Program  : miniShell                   Version    : 1.3
  --------------------------------------------------------------------
    skeleton code for linix/unix/minix command line interpreter
@@ -67,9 +67,10 @@ void sigchld_handler(int sig)
       if (jobs[i].pid == pid && jobs[i].running)
       {
         jobs[i].running = 0;
-        write(1, jobs[i].completed_msg, 256);
+        // Write only the actual message length, not the full buffer
+        int msg_len = strlen(jobs[i].completed_msg);
+        write(1, jobs[i].completed_msg, msg_len);
         fflush(stdout);
-        fflush(stdin);
       }
     }
   }
@@ -132,12 +133,14 @@ signal(SIGCHLD, sigchld_handler);
     
   while (1) {			/* do Forever */
     prompt();
-    if (fgets(line, NL, stdin) == NULL) {
+    fgets(line, NL, stdin);
+    fflush(stdin);
+
+    // This if() required for gradescope
+    if (feof(stdin)) {		/* non-zero on EOF  */
       wait_for_background_jobs();
       exit(0);
     }
-    fflush(stdin);
-
     if (line[0] == '#' || line[0] == '\n' || line[0] == '\000'){
       continue;			/* to prompt */
     }
@@ -193,6 +196,8 @@ signal(SIGCHLD, sigchld_handler);
       case 0:			/* code executed only by child process */
       {
 	      execvp(v[0], v);
+        perror(v[0]); // Print error if execvp fails
+        exit(1);      // Exit child if execvp fails
       }
       default:			/* code executed only by parent process */
       {
