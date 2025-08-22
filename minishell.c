@@ -67,9 +67,7 @@ void sigchld_handler(int sig)
       if (jobs[i].pid == pid && jobs[i].running)
       {
         jobs[i].running = 0;
-        // Write only the actual message length, not the full buffer
-        int msg_len = strlen(jobs[i].completed_msg);
-        write(1, jobs[i].completed_msg, msg_len);
+        write(1, jobs[i].completed_msg, strlen(jobs[i].completed_msg));
         fflush(stdout);
       }
     }
