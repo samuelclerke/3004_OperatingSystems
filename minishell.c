@@ -1,4 +1,4 @@
-/*********************************************************************
+int             eof_reached = 0;    /* flag to track if EOF was reached *//*********************************************************************
    Program  : miniShell                   Version    : 1.3
  --------------------------------------------------------------------
    skeleton code for linix/unix/minix command line interpreter
@@ -67,9 +67,9 @@ void sigchld_handler(int sig)
       if (jobs[i].pid == pid && jobs[i].running)
       {
         jobs[i].running = 0;
-        fflush(stdout);
         write(1, jobs[i].completed_msg, 256);
         fflush(stdout);
+        fflush(stdin);
       }
     }
   }
@@ -132,14 +132,12 @@ signal(SIGCHLD, sigchld_handler);
     
   while (1) {			/* do Forever */
     prompt();
-    fgets(line, NL, stdin);
-    fflush(stdin);
-
-    // This if() required for gradescope
-    if (feof(stdin)) {		/* non-zero on EOF  */
+    if (fgets(line, NL, stdin) == NULL) {
       wait_for_background_jobs();
       exit(0);
     }
+    fflush(stdin);
+
     if (line[0] == '#' || line[0] == '\n' || line[0] == '\000'){
       continue;			/* to prompt */
     }
