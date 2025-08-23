@@ -21,15 +21,16 @@
 char            line[NL];	/* command input buffer */
 
 
+// Custom struct to control and organise background processes
 struct job
 {
-  int id;
-  pid_t pid;
-  char completed_msg[256];
-  int running;
+  int id; // ID assigned by minishell
+  pid_t pid; // PID assigned by OS
+  char completed_msg[256]; // The message to return containing id, and command ran
+  int running; // Indicative of background process running.
 };
 
-struct job jobs[256] = {0};
+struct job jobs[256] = {0}; // Creates jobs array of 256 avaliable job slots with all values set to 0 or type equivalent
 
 /*
 	shell prompt
@@ -41,6 +42,8 @@ void prompt(void)
   fflush(stdout);
 }
 
+
+// Getter for finding next available job index in jobs array. Returns position as int
 int get_next_job_slot()
 {
   int idx = 0;
@@ -55,33 +58,35 @@ int get_next_job_slot()
   return idx;
 }
 
-void sigchld_handler(int sig)
+void sigchld_handler(int sig) // Handler for the SIGCHLD signal that runs when a child (zombie) process terminates.
 {
   int status;
   pid_t pid;
 
-  while ((pid = waitpid(-1, &status, WNOHANG)) > 0)
+  while ((pid = waitpid(-1, &status, WNOHANG)) > 0) // return processes pid with waitpid()
   {
     for (int i = 0; i < 256; i++)
     {
-      if (jobs[i].pid == pid && jobs[i].running)
+      if (jobs[i].pid == pid && jobs[i].running) // Finds PID and if it is also running.
       {
-        jobs[i].running = 0;
-        write(1, jobs[i].completed_msg, strlen(jobs[i].completed_msg));
+        jobs[i].running = 0; // set as not running to free up space in jobs array.
+        write(1, jobs[i].completed_msg, strlen(jobs[i].completed_msg)); // signal safe write using completed messege and sending to STDOUT.
         fflush(stdout);
       }
     }
   }
 }
 
+// Adds job to the jobs array in the slot provided by caller.
 void add_job(pid_t pid, char *cmd, int slot)
 {
-  jobs[slot].id = slot + 1;
+  jobs[slot].id = slot + 1; // ID is +1 from slot as arrays start at 0 but the ID system starts at 1
   jobs[slot].pid = pid;
   jobs[slot].running = 1;
-  snprintf(jobs[slot].completed_msg, sizeof(jobs[slot].completed_msg), "[%d]+ Done %s\n", jobs[slot].id, cmd);
+  snprintf(jobs[slot].completed_msg, sizeof(jobs[slot].completed_msg), "[%d]+ Done %s\n", jobs[slot].id, cmd); // Compiles completed message together and puts it into the job attr.
 }
 
+// Function to rejoin the tokens for the command to later use in adding the job to the jobs array.
 void join_tokens(char *dest, char *tokens[], int maxlen)
 {
   dest[0] = '\0';
@@ -99,17 +104,23 @@ void join_tokens(char *dest, char *tokens[], int maxlen)
   }
 }
 
-void wait_for_background_jobs() {
+// Tells program exit to wait until all background jobs have terminated and all jobs in jobs array have running set to 0. Small sleep time set to prevent aggressive use of waiting.
+void wait_for_background_jobs() 
+{
   int has_running_jobs = 1;
-  while (has_running_jobs) {
+  while (has_running_jobs) 
+  {
     has_running_jobs = 0;
-    for (int i = 0; i < 256; i++) {
-      if (jobs[i].running) {
+    for (int i = 0; i < 256; i++) 
+    {
+      if (jobs[i].running) 
+      {
         has_running_jobs = 1;
         break;
       }
     }
-    if (has_running_jobs) {
+    if (has_running_jobs) 
+    {
       usleep(100000);
     }
   }
@@ -124,10 +135,10 @@ int main(int argk, char *argv[], char *envp[])
   char           *v[NV];	        /* array of pointers to command line tokens */
   char           *sep = " \t\n";  /* command line token separators    */
   int             i;		          /* parse index */
-  int             bgProcess;
+  int             bgProcess;      // Boolean-like value to determine if current shell command is to be background or not.
 
     /* prompt for and process one command line at a time  */
-signal(SIGCHLD, sigchld_handler);
+signal(SIGCHLD, sigchld_handler); // waits for SIGCHLD and sends into handler.
     
   while (1) {			/* do Forever */
     prompt();
@@ -136,7 +147,7 @@ signal(SIGCHLD, sigchld_handler);
 
     // This if() required for gradescope
     if (feof(stdin)) {		/* non-zero on EOF  */
-      wait_for_background_jobs();
+      wait_for_background_jobs(); // Waits for background jobs to not exit early.
       exit(0);
     }
     if (line[0] == '#' || line[0] == '\n' || line[0] == '\000'){
@@ -159,7 +170,7 @@ signal(SIGCHLD, sigchld_handler);
     {
       if (v[1] == NULL) // should return currenct directory to the systems home
       {
-        char *home = getenv("HOME");
+        char *home = getenv("HOME"); // gets home path in system. (Equivalent to writing cd ~ in bash)
         if (chdir(home) != 0)
         {
           perror("cd");
@@ -195,14 +206,15 @@ signal(SIGCHLD, sigchld_handler);
       {
 	      execvp(v[0], v);
         perror(v[0]); // Print error if execvp fails
-        exit(1);      // Exit child if execvp fails
+        exit(1); // Exit child if execvp fails
       }
       default:			/* code executed only by parent process */
       {
         if (bgProcess)
         {
-          int slot = get_next_job_slot();
+          int slot = get_next_job_slot(); // Assign job slot for a new background process.
 
+          // Handling of command and adding jobs for later convenience.
           char cmdline[256];
           join_tokens(cmdline, v, sizeof(cmdline));
           printf("[%d] %d\n", slot + 1, frkRtnVal);
@@ -210,7 +222,7 @@ signal(SIGCHLD, sigchld_handler);
         }
         else
         {
-          waitpid(frkRtnVal, NULL, 0);
+          waitpid(frkRtnVal, NULL, 0); // wait for parent to finish in condition where child will return and not be a zombie process.
         }
     	  break;
       }
